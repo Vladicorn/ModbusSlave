@@ -7,7 +7,8 @@ import (
 )
 
 //Accept после тсп конекта
-func handleConnection(conn net.Conn, ch chan TelegramAnsver) {
+func handleTCPConnection(conn net.Conn, ch chan TelegramAnsver) {
+	defer conn.Close()
 	for {
 
 		//считываем 12 байт в буффер
@@ -22,7 +23,7 @@ func handleConnection(conn net.Conn, ch chan TelegramAnsver) {
 			}
 		}
 
-		fmt.Println("Message Received:", buf)
+		//	fmt.Println("Message Received:", buf)
 		telegW, teg := ReadHoldingRegister(buf)
 		conn.Write(telegW)
 		ch <- teg
@@ -31,26 +32,24 @@ func handleConnection(conn net.Conn, ch chan TelegramAnsver) {
 
 func ModbusConnect(chOut chan TelegramAnsver, chanbool chan bool, chanStop chan bool, chanStart chan bool) {
 
-	start := <-chanStart
+	// Устанавливаем прослушивание порта
+	ln, _ := net.Listen("tcp", ":502")
+	chIn := make(chan TelegramAnsver)
 
-	if start == true {
-		// Устанавливаем прослушивание порта
-		ln, _ := net.Listen("tcp", ":502")
-		chIn := make(chan TelegramAnsver)
-		// Открываем порт
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+	// Открываем порт
+	conn, err := ln.Accept()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-		go handleConnection(conn, chIn)
-		go bufferChan(chanbool, chIn, chOut)
-		fmt.Println("Я ЖДУУУУУУУУУУ")
-		stop := <-chanStop
-		if stop == true {
-			conn.Close()
-		}
+	go handleTCPConnection(conn, chIn)
+	go bufferChan(chanbool, chIn, chOut)
+
+	stop := <-chanStop
+	if stop {
+		conn.Close()
+		ln.Close()
 	}
 }
 
@@ -60,7 +59,7 @@ func bufferChan(chanbool chan bool, chIn, chOut chan TelegramAnsver) {
 	for {
 		select {
 		case bufval = <-chIn:
-			fmt.Println("Blank")
+		//	fmt.Println("Blank")
 		case <-chanbool:
 			fmt.Println("Handle request")
 			chOut <- bufval

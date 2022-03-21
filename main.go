@@ -13,25 +13,31 @@ type ViewData struct {
 }
 
 func (ch *TelStr) HomeStart(w http.ResponseWriter, r *http.Request) {
+	if !ch.chFlagStart {
+		go Modbus.ModbusConnect(ch.ch, ch.chansv, ch.chStop, ch.chStart)
+		ch.chFlagStart = true
+	}
 
-	ch.chStart <- true
-
+	//ch.chStart <- true
+	fmt.Println("енене")
 	ch.chansv <- true
+
 	teleg := <-ch.ch
+	fmt.Println(teleg)
 	data := ViewData{
 		Title:   teleg.MBAP.TranID,
 		Message: teleg.MBAP.UnitID,
 	}
-	r.ParseForm()
-	// logic part of log in
-	a0 := r.Form["sliceID0"]
+	/*	r.ParseForm()
+		// logic part of log in
+		a0 := r.Form["sliceID0"]
 
-	if len(a0) > 0 {
-		a01 := []byte(a0[0])
-		fmt.Println(a01)
-		Modbus.RegSlice[0] = a01[0]
+		if len(a0) > 0 {
+			a01 := []byte(a0[0])
+			fmt.Println(a01)
+			Modbus.RegSlice[0] = a01[0]
 
-	}
+		}*/
 
 	tmpl, _ := template.ParseFiles("./html/Start.html")
 	tmpl.Execute(w, data)
@@ -39,8 +45,9 @@ func (ch *TelStr) HomeStart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ch *TelStr) HomeStop(w http.ResponseWriter, r *http.Request) {
+
 	ch.chStop <- true
-	fmt.Println("SSSSSSTTTTTTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOP")
+	ch.chFlagStart = false
 	ch.chansv <- true
 	teleg := <-ch.ch
 	data := ViewData{
@@ -64,31 +71,6 @@ func (ch *TelStr) HomeStop(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-func (ch *TelStr) HomeIndex(w http.ResponseWriter, r *http.Request) {
-	ch.chansv <- true
-	teleg := <-ch.ch
-	data := ViewData{
-		Title:   teleg.MBAP.TranID,
-		Message: teleg.MBAP.UnitID,
-	}
-	r.ParseForm()
-	// logic part of log in
-	a0 := r.Form["sliceID0"]
-
-	if len(a0) > 0 {
-		a01 := []byte(a0[0])
-		fmt.Println(a01)
-		Modbus.RegSlice[0] = a01[0]
-
-	}
-	fmt.Println("Start")
-	tmpl, _ := template.ParseFiles("./html/Index.html")
-
-	tmpl.Execute(w, data)
-
-}*/
-
 func (ch *TelStr) HomeIndex(w http.ResponseWriter, r *http.Request) {
 
 	tmpl, _ := template.ParseFiles("./html/Index.html")
@@ -110,6 +92,7 @@ func main() {
 
 	//var telegram Modbus.TelegramAnsver
 	var telStr TelStr
+
 	ch := make(chan Modbus.TelegramAnsver)
 	chansv := make(chan bool)
 	chanCancel := make(chan bool)
@@ -118,7 +101,7 @@ func main() {
 	telStr.chansv = chansv
 	telStr.chStop = chanCancel
 	telStr.chStart = chanStart
-	go Modbus.ModbusConnect(ch, chansv, chanCancel, chanStart)
+	telStr.chFlagStart = false
 	fmt.Println("Server is listening...")
 	go http.HandleFunc("/stop", telStr.HomeStop)
 	go http.HandleFunc("/start", telStr.HomeStart)
