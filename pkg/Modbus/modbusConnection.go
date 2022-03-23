@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
+
+var Quantity byte
 
 //Accept после тсп конекта
 func handleTCPConnection(conn net.Conn, ch chan TelegramAnsver) {
@@ -50,6 +53,39 @@ func ModbusConnect(chOut chan TelegramAnsver, chanbool chan bool, chanStop chan 
 	if stop {
 		conn.Close()
 		ln.Close()
+	}
+}
+
+func ModsbusConnectClient() {
+	ticker := time.NewTicker(time.Second)
+	Quantity = 4
+	// Подключаемся к сокету
+	conn, _ := net.Dial("tcp", "127.0.0.1:502")
+	RegSlice[11] = Quantity
+	for {
+		select {
+		case <-ticker.C:
+			conn.Write(RegSlice)
+			RegSlice[1] = RegSlice[1] + 1
+			if RegSlice[1] > 244 {
+				RegSlice[0] = RegSlice[0] + 1
+				RegSlice[1] = 0
+			}
+		}
+		// Прослушиваем ответ
+		lenresp := (Quantity*2 + 9)
+		buf := make([]byte, lenresp)
+		if _, err := conn.Read(buf); err != nil {
+			if err == io.EOF {
+				fmt.Println("Connection lost.")
+				return
+			} else {
+				fmt.Println(err)
+				return
+			}
+		}
+		teleg := ReadHoldingRegisterPol(buf)
+		fmt.Println(teleg)
 	}
 }
 
