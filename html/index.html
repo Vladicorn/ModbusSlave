@@ -5,20 +5,19 @@
         <title>{{ .Title}}</title>
     </head>
     <body>
-        <h1><a href='/'>Modbus WebSimulation для начала нажми Start</a></h1>
-        <h1>{{ .Title}}</h1>
-        <p>{{ .Message}}</p>
-        <form method="get" action="/start">
-            <button type="submit">Start - Начнем</button>
+        <h1>Modbus WebSimulation From Apeyron IT <br>для начала нажми Start</h1>
+            <form method="get" action="/start">
+                <h3> <button type="submit">Start Modbus Client(Master) </button>
+                    Slave ID<input type="text" size="40" name="Quantity" ></h3>
         </form>
-        <form name="test" method="post" action="input1.php">
-            <p><b>ID0:</b><br>
-             <input type="text" size="40" name="sliceID0" >
-            </p>
-            <p><b>ID1:</b><br>
-                <input type="text" size="40" name="sliceID1" >
-               </p>       
+
+        <form method="get" action="/startClient">
+            <h3><button type="submit">Start Modbus Server(Slave)</button>
+            Quantity<input type="text" size="40" name="Quantity" ></h3>
+               
         </form>
+
+
 
 
 

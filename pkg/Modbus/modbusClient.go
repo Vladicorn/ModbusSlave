@@ -55,8 +55,6 @@ func ReadHoldingRegisterPol(data []byte) TelegramAnsverSlave {
 		return telegram
 	}
 	telegram.PDU.FuncCode = buf[0]
-	//	telegram.PDU.FirstReg = binary.BigEndian.Uint16(buf[1:3])
-	//	telegram.PDU.CountReg = binary.BigEndian.Uint16(buf[3:5])
 	telegram.PDU.CountReg = buf[1]
 	teglen := int(telegram.MBAP.Length - 1)
 	slicereg := make([]byte, teglen, 100)

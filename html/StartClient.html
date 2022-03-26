@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ .Title}}</title>
+    </head>
+    <body>
+        <h1><a href='/'>Modbus WebSimulation</a></h1>
+        <h1>{{ .Title}}</h1>
+        <p>{{ .Message}}</p>
+        <form method="get" action="/stopClient">
+            <button type="submit">Stop</button>
+        </form>
+     </body>
+</html>

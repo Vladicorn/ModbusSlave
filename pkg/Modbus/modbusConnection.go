@@ -33,6 +33,40 @@ func handleTCPConnection(conn net.Conn, ch chan TelegramAnsver) {
 	}
 }
 
+func handleTCPConnectionClient(conn net.Conn, ch chan TelegramAnsverSlave) {
+	defer conn.Close()
+	ticker := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-ticker.C:
+
+			conn.Write(RegSliceClient)
+			RegSliceClient[1] = RegSliceClient[1] + 1
+			if RegSliceClient[1] > 244 {
+				RegSliceClient[0] = RegSliceClient[0] + 1
+				RegSliceClient[1] = 0
+			}
+
+		}
+		// Прослушиваем ответ
+		lenresp := (Quantity*2 + 9)
+		buf := make([]byte, lenresp)
+		if _, err := conn.Read(buf); err != nil {
+			if err == io.EOF {
+				fmt.Println("Connection lost.")
+				return
+			} else {
+				fmt.Println(err)
+				return
+			}
+		}
+
+		teleg := ReadHoldingRegisterPol(buf)
+		ch <- teleg
+
+	}
+}
+
 func ModbusConnect(chOut chan TelegramAnsver, chanbool chan bool, chanStop chan bool, chanStart chan bool) {
 
 	// Устанавливаем прослушивание порта
@@ -50,42 +84,26 @@ func ModbusConnect(chOut chan TelegramAnsver, chanbool chan bool, chanStop chan 
 	go bufferChan(chanbool, chIn, chOut)
 
 	stop := <-chanStop
+
 	if stop {
 		conn.Close()
 		ln.Close()
 	}
 }
 
-func ModsbusConnectClient() {
-	ticker := time.NewTicker(time.Second)
-	Quantity = 4
+func ModsbusConnectClient(chOut chan TelegramAnsverSlave, chanbool chan bool, chanStop chan bool, chanStart chan bool) {
+
+	chIn := make(chan TelegramAnsverSlave)
+	Quantity = 2
 	// Подключаемся к сокету
 	conn, _ := net.Dial("tcp", "127.0.0.1:502")
-	RegSlice[11] = Quantity
-	for {
-		select {
-		case <-ticker.C:
-			conn.Write(RegSlice)
-			RegSlice[1] = RegSlice[1] + 1
-			if RegSlice[1] > 244 {
-				RegSlice[0] = RegSlice[0] + 1
-				RegSlice[1] = 0
-			}
-		}
-		// Прослушиваем ответ
-		lenresp := (Quantity*2 + 9)
-		buf := make([]byte, lenresp)
-		if _, err := conn.Read(buf); err != nil {
-			if err == io.EOF {
-				fmt.Println("Connection lost.")
-				return
-			} else {
-				fmt.Println(err)
-				return
-			}
-		}
-		teleg := ReadHoldingRegisterPol(buf)
-		fmt.Println(teleg)
+	RegSliceClient[11] = Quantity
+	go handleTCPConnectionClient(conn, chIn)
+	go bufferChanClient(chanbool, chIn, chOut)
+
+	stop := <-chanStop
+	if stop {
+		conn.Close()
 	}
 }
 
@@ -95,10 +113,28 @@ func bufferChan(chanbool chan bool, chIn, chOut chan TelegramAnsver) {
 	for {
 		select {
 		case bufval = <-chIn:
-		//	fmt.Println("Blank")
+			//fmt.Println(bufval)
 		case <-chanbool:
 			fmt.Println("Handle request")
 			chOut <- bufval
+		}
+	}
+}
+
+//буфферная функция
+//func bufferChanClient(chanbool chan bool, chIn, chOut chan TelegramAnsverSlave) {
+func bufferChanClient(chanbool chan bool, chIn, chOut chan TelegramAnsverSlave) {
+
+	var bufval TelegramAnsverSlave
+	for {
+		fmt.Println("Handle request")
+		select {
+		case bufval = <-chIn:
+			fmt.Println(bufval)
+		case <-chanbool:
+			fmt.Println("123123Handle request")
+			chOut <- bufval
+
 		}
 	}
 }
