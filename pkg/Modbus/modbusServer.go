@@ -6,49 +6,7 @@ import (
 	"fmt"
 )
 
-type PDU struct {
-	FuncCode uint8
-	FirstReg uint16
-	//	Data     []uint16
-	CountReg uint16
-}
-
-type PDUAnsver struct {
-	FuncCode uint8
-	CountReg uint8
-	Data     []byte
-}
-
-type Telegram struct {
-	MBAP MBAPHeader
-	PDU  PDU
-}
-type TelegramAnsver struct {
-	MBAP MBAPHeader
-	PDU  PDUAnsver
-}
-
-type MBAPHeader struct {
-	TranID     uint16
-	ProtocolID uint16
-	Length     uint16
-	UnitID     uint8
-}
-
-var RegSlice = []byte{
-	0x00, 0x0A,
-	0x00, 0xFF,
-	0x00, 0x01,
-	0x00, 0x03,
-	0x00, 0x04,
-	0x00, 0x00,
-	0x00, 0x05,
-	0x00, 0x00,
-	0x00, 0x00,
-	0x00, 0x00,
-	0x00, 0x00,
-}
-var slaveID uint8 = 2
+var slaveID uint8 = 1
 
 //парсинг модбас
 func ReadHoldingRegister(data []byte) ([]byte, TelegramAnsver) {
@@ -123,24 +81,19 @@ func ReadHoldingRegister(data []byte) ([]byte, TelegramAnsver) {
 
 //Разбор дата поинт
 func ReadDataMBHolding(teleg *Telegram) TelegramAnsver {
-
 	slicereg := make([]byte, teleg.PDU.CountReg*2, 100)
 	var telega TelegramAnsver
-
 	j := 0
 	//проверка на количество считываний не сделано
-
 	for i := teleg.PDU.FirstReg; i < teleg.PDU.CountReg*2; i++ {
 		slicereg[j] = RegSlice[i]
 		j++
 	}
-
 	telega.MBAP = teleg.MBAP
 	telega.MBAP.Length = telega.MBAP.Length + 3
 	telega.PDU.FuncCode = teleg.PDU.FuncCode
 	telega.PDU.CountReg = uint8(j)
 	telega.PDU.Data = slicereg
-
 	return telega
 
 }

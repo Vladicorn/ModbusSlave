@@ -6,26 +6,6 @@ import (
 	"fmt"
 )
 
-type PDUAnsverSlave struct {
-	FuncCode uint8
-	CountReg uint8
-	Data     []uint16
-}
-type TelegramAnsverSlave struct {
-	MBAP MBAPHeader
-	PDU  PDUAnsverSlave
-}
-
-var RegSliceClient = []byte{
-	0x00, 0x01,
-	0x00, 0x00,
-	0x00, 0x06,
-	0x01,
-	0x03,
-	0x00, 0x00,
-	0x00, 0x00,
-}
-
 func ReadHoldingRegisterPol(data []byte) TelegramAnsverSlave {
 	var telegram TelegramAnsverSlave
 	conn := bytes.NewBuffer(data)
